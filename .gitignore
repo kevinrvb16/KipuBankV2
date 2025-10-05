@@ -1,0 +1,25 @@
+# Compiler files
+cache/
+out/
+*.swp
+*.swo
+*.swn
+
+# Node modules (if using Hardhat)
+node_modules/
+
+# Environment variables
+.env
+.env.local
+
+# Editor directories
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Foundry specific
+broadcast/
