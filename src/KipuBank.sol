@@ -12,6 +12,7 @@ contract KipuBank is AccessControl, Pausable {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
+    // Custom errors q economizam gas
     error ZeroAmount();
     error ZeroBankCap();
     error ZeroWithdrawalLimit();
@@ -27,6 +28,7 @@ contract KipuBank is AccessControl, Pausable {
     error InvalidPrice();
     error InvalidDecimals();
 
+    // user => token => balance
     mapping(address => mapping(address => uint256)) private _vaults;
     mapping(address => uint256) private _totalDeposits;
     mapping(address => uint256) private _withdrawalLimits;
@@ -99,6 +101,7 @@ contract KipuBank is AccessControl, Pausable {
         
         if (address(this).balance > _bankCaps[token]) revert BankCapacityExceeded();
         
+        // Checar limit USD se ativado
         if (useUsdBankCap && address(ethUsdPriceFeed) != address(0)) {
             uint256 bankValueUSD = getContractValueInUSD();
             if (bankValueUSD > bankCapUSD) revert BankCapacityExceeded();
@@ -153,6 +156,7 @@ contract KipuBank is AccessControl, Pausable {
         if (token == address(0)) revert TokenNotSupported();
         if (!_supportedTokens[token]) revert TokenNotSupported();
         
+        // Suporte a fee-on-transfer tokens - usar balance diff
         uint256 balanceBefore = IERC20(token).balanceOf(address(this));
         
         bool success = IERC20(token).transferFrom(msg.sender, address(this), amount);
@@ -283,6 +287,7 @@ contract KipuBank is AccessControl, Pausable {
         _bankCaps[token] = tokenBankCap;
         _tokenList.push(token);
         
+        // Tentar pegar decimals automaticamente, fallback pra 18
         try IERC20Metadata(token).decimals() returns (uint8 decimals) {
             _tokenDecimals[token] = decimals;
         } catch {
@@ -296,6 +301,7 @@ contract KipuBank is AccessControl, Pausable {
         if (token == address(0)) revert ZeroAddress();
         if (!_supportedTokens[token]) revert TokenNotSupported();
         
+        // TODO: considerar check se tem saldo de users antes de remover?
         _supportedTokens[token] = false;
         
         for (uint256 i = 0; i < _tokenList.length; i++) {
@@ -366,6 +372,7 @@ contract KipuBank is AccessControl, Pausable {
             uint80 answeredInRound
         ) = ethUsdPriceFeed.latestRoundData();
         
+        // Validar que price feed não está stale (padrão: 1h)
         if (updatedAt == 0 || block.timestamp - updatedAt > maxPriceAge) {
             revert StalePrice();
         }
