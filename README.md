@@ -1,83 +1,83 @@
 # KipuBank Smart Contract
 
-Um contrato bancário com controle de acesso baseado em roles, suporte multi-token, integração com oráculos Chainlink e sistema de conversão de decimais.
+A banking smart contract with role-based access control, multi-token support, Chainlink oracle integration, and decimal conversion system.
 
-## Melhorias Implementadas
+## Implemented Improvements
 
-### 1. Sistema de Controle de Acesso
-**Implementado:** OpenZeppelin's `AccessControl` com roles hierárquicos (ADMIN_ROLE e OPERATOR_ROLE).
+### 1. Access Control System
+**Implementation:** OpenZeppelin's `AccessControl` with hierarchical roles (ADMIN_ROLE and OPERATOR_ROLE).
 
-**Por quê:** Proporciona gerenciamento seguro e granular de permissões seguindo best practices da indústria. Permite delegar responsabilidades operacionais sem comprometer a segurança administrativa.
+**Why:** Provides secure and granular permission management following industry best practices. Enables delegation of operational responsibilities without compromising administrative security.
 
-### 2. Suporte Multi-Token
-**Implementado:** Sistema unificado para ETH e tokens ERC-20 com contabilidade separada por ativo.
+### 2. Multi-Token Support
+**Implementation:** Unified system for ETH and ERC-20 tokens with separate accounting per asset.
 
-**Por quê:** Aumenta a versatilidade do contrato, permitindo lidar com múltiplos tipos de ativos. Usa `address(0)` para representar ETH nativamente, criando uma API consistente.
+**Why:** Increases contract versatility by handling multiple asset types. Uses `address(0)` to represent native ETH, creating a consistent API.
 
-### 3. Integração com Oráculos Chainlink
-**Implementado:** Price feeds para conversão em USD, validação de staleness e limites baseados em valor real.
+### 3. Chainlink Oracle Integration
+**Implementation:** Price feeds for USD conversion, staleness validation, and real value-based limits.
 
-**Por quê:** Fornece controles mais significativos baseados em valor real ao invés de quantidades voláteis. Permite limites de capacidade denominados em USD, mais úteis operacionalmente.
+**Why:** Provides more meaningful controls based on actual value instead of volatile quantities. Enables USD-denominated capacity limits, more operationally useful.
 
-### 4. Sistema de Conversão de Decimais
-**Implementado:** Normalização para 6 decimais (padrão USDC) com funções bidirecionais de conversão.
+### 4. Decimal Conversion System
+**Implementation:** Normalization to 6 decimals (USDC standard) with bidirectional conversion functions.
 
-**Por quê:** Permite contabilidade precisa e comparação entre ativos com diferentes casas decimais (ETH 18, USDC 6, WBTC 8, etc.). Facilita agregação de portfólios multi-token.
+**Why:** Enables precise accounting and comparison across assets with different decimal places (ETH 18, USDC 6, WBTC 8, etc.). Facilitates multi-token portfolio aggregation.
 
-### 5. Padrões de Segurança
-**Implementado:** Checks-Effects-Interactions, Pausable, custom errors, e variáveis immutable/constant.
+### 5. Security Patterns
+**Implementation:** Checks-Effects-Interactions, Pausable, custom errors, and immutable/constant variables.
 
-**Por quê:** Minimiza vetores de ataque (reentrancy), otimiza custos de gas (~50 gas economizado por revert com custom errors), e garante transparência com emissão abrangente de eventos.
+**Why:** Minimizes attack vectors (reentrancy), optimizes gas costs (~50 gas saved per revert with custom errors), and ensures transparency with comprehensive event emissions.
 
-## Instruções de Implantação
+## Deployment Instructions
 
-### Pré-requisitos
+### Prerequisites
 - Solidity ^0.8.30
-- Foundry ou Hardhat
-- ETH de testnet
-- Endereços dos price feeds Chainlink
+- Foundry or Hardhat
+- Testnet ETH
+- Chainlink price feed addresses
 
-### 1. Compilação
+### 1. Compilation
 ```bash
 forge build
 ```
 
-### 2. Deploy do Contrato
+### 2. Contract Deployment
 ```solidity
 KipuBank bank = new KipuBank(
-    1 ether,      // limite de saque inicial (ETH)
-    100 ether     // capacidade inicial do banco (ETH)
+    1 ether,      // initial withdrawal limit (ETH)
+    100 ether     // initial bank capacity (ETH)
 );
 ```
 
-### 3. Configurar Price Feed (Opcional mas Recomendado)
+### 3. Configure Price Feed (Optional but Recommended)
 ```solidity
 bank.setPriceFeed(0x694AA1769357215DE4FAC081bf1f309aDC325306);
 bank.setBankCapUSD(1_000_000_00000000);
 bank.setUseUsdBankCap(true);
 ```
 
-**Price Feeds Principais:**
+**Main Price Feeds:**
 - Sepolia ETH/USD: `0x694AA1769357215DE4FAC081bf1f309aDC325306`
 - Mainnet ETH/USD: `0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419`
-- Lista completa: https://docs.chain.link/data-feeds/price-feeds/addresses
+- Full list: https://docs.chain.link/data-feeds/price-feeds/addresses
 
-### 4. Adicionar Tokens Suportados
+### 4. Add Supported Tokens
 ```solidity
 bank.addSupportedToken(
-    0x...,                    // endereço do token (ex: USDC)
-    100_000 * 10**6,          // limite de saque
-    10_000_000 * 10**6        // capacidade máxima
+    0x...,                    // token address (e.g., USDC)
+    100_000 * 10**6,          // withdrawal limit
+    10_000_000 * 10**6        // max capacity
 );
 
 bank.setTokenPriceFeed(0x..., 0x...);
 ```
 
-## Interação com o Contrato
+## Contract Interaction
 
-### Usuários
+### Users
 
-**Depósitos:**
+**Deposits:**
 ```solidity
 bank.deposit{value: 1 ether}();
 
@@ -85,117 +85,117 @@ IERC20(token).approve(address(bank), amount);
 bank.depositToken(token, amount);
 ```
 
-**Saques:**
+**Withdrawals:**
 ```solidity
 bank.withdraw(0.5 ether);
 bank.withdrawToken(token, amount);
 ```
 
-**Consultas:**
+**Queries:**
 ```solidity
 uint256 balance = bank.getTokenVaultBalance(user, address(0));
 uint256 totalUSD = bank.getUserTotalValueInUSD(user);
 ```
 
-### Administradores
+### Administrators
 
-**Controle:**
+**Control:**
 ```solidity
 bank.pause();
 bank.unpause();
 ```
 
-**Gestão de Tokens:**
+**Token Management:**
 ```solidity
 bank.updateTokenWithdrawalLimit(token, newLimit);
 bank.updateTokenBankCap(token, newCap);
 bank.removeSupportedToken(token);
 ```
 
-**Emergência:**
+**Emergency:**
 ```solidity
 bank.emergencyWithdrawToken(token);
 ```
 
-## Decisões de Design e Trade-offs
+## Design Decisions and Trade-offs
 
-### 1. USD Bank Cap Opcional
-**Decisão:** Cap em USD pode ser habilitado/desabilitado.
+### 1. Optional USD Bank Cap
+**Decision:** USD cap can be enabled/disabled.
 
-**Trade-off:** Adiciona complexidade (+1 flag booleana) mas oferece flexibilidade operacional. Permite operar sem oráculos se necessário.
+**Trade-off:** Adds complexity (+1 boolean flag) but offers operational flexibility. Allows operation without oracles if needed.
 
-### 2. Normalização para 6 Decimais
-**Decisão:** Padronização em 6 decimais (USDC).
+### 2. 6-Decimal Normalization
+**Decision:** Standardization to 6 decimals (USDC).
 
-**Trade-off:** Perda de precisão para tokens >6 decimais, mas aceitável para aplicações financeiras. Balanceia precisão com custos de gas e simplicidade. Tokens com 18 decimais perdem ~12 dígitos menos significativos.
+**Trade-off:** Precision loss for tokens >6 decimals, but acceptable for financial applications. Balances precision with gas costs and simplicity. Tokens with 18 decimals lose ~12 least significant digits.
 
-### 3. Auto-detecção de Decimais
-**Decisão:** Detectar decimais via `IERC20Metadata`, fallback para 18, com override manual.
+### 3. Automatic Decimal Detection
+**Decision:** Detect decimals via `IERC20Metadata`, fallback to 18, with manual override.
 
-**Trade-off:** Reduz trabalho administrativo mas pode falhar com tokens não-padrão. Solução: função `setTokenDecimals()` permite correção manual quando necessário.
+**Trade-off:** Reduces administrative burden but may fail with non-standard tokens. Solution: `setTokenDecimals()` function enables manual correction when needed.
 
-### 4. ETH como address(0)
-**Decisão:** Representar ETH nativamente como `address(0)` no sistema unificado.
+### 4. ETH as address(0)
+**Decision:** Represent native ETH as `address(0)` in unified system.
 
-**Trade-off:** Padrão levemente não-convencional mas amplamente adotado. Permite API consistente entre ETH e ERC-20s, simplificando a lógica de negócio.
+**Trade-off:** Slightly unconventional pattern but widely adopted. Enables consistent API between ETH and ERC-20s, simplifying business logic.
 
-### 5. Whitelist de Tokens
-**Decisão:** Admins devem aprovar cada token explicitamente.
+### 5. Token Whitelist
+**Decision:** Admins must explicitly approve each token.
 
-**Trade-off:** Requer ação administrativa mas previne tokens maliciosos/incompatíveis. Evita contratos com lógica de transfer personalizada que podem quebrar o sistema.
+**Trade-off:** Requires administrative action but prevents malicious/incompatible tokens. Avoids contracts with custom transfer logic that could break the system.
 
 ### 6. Fee-on-Transfer Tokens
-**Decisão:** Suportar tokens com taxas calculando `balanceAfter - balanceBefore`.
+**Decision:** Support fee tokens by calculating `balanceAfter - balanceBefore`.
 
-**Trade-off:** Adiciona 2 reads extras de storage (~2.1k gas) mas garante contabilidade correta. Essencial para tokens como USDT em certas redes.
+**Trade-off:** Adds 2 extra storage reads (~2.1k gas) but ensures correct accounting. Essential for tokens like USDT on certain networks.
 
 ### 7. Checks-Effects-Interactions
-**Decisão:** Sempre atualizar estado antes de calls externos.
+**Decision:** Always update state before external calls.
 
-**Trade-off:** Pode requerer lógica mais verbosa mas previne reentrancy. Custo adicional mínimo de organização de código, benefício de segurança massivo.
+**Trade-off:** May require more verbose logic but prevents reentrancy. Minimal additional cost in code organization, massive security benefit.
 
-## Segurança
+## Security
 
-**Padrões Implementados:**
-- ✅ Checks-Effects-Interactions (previne reentrancy)
+**Implemented Patterns:**
+- ✅ Checks-Effects-Interactions (prevents reentrancy)
 - ✅ Access Control (OpenZeppelin)
 - ✅ Pausable (emergency stop)
-- ✅ Validação de staleness de oráculos (max 1 hora)
-- ✅ Custom errors (eficiência de gas)
-- ✅ Whitelist de tokens
+- ✅ Oracle staleness validation (max 1 hour)
+- ✅ Custom errors (gas efficiency)
+- ✅ Token whitelist
 
-**Limitações Conhecidas:**
-1. Remover token trava fundos dos usuários até reativação
-2. Normalização pode perder precisão em tokens >6 decimais
-3. Funcionalidades USD dependem de feeds Chainlink funcionais
-4. Sem geração de yield/juros (versão futura)
+**Known Limitations:**
+1. Removing token support locks user funds until reactivation
+2. Normalization may lose precision for tokens >6 decimals
+3. USD features depend on functional Chainlink feeds
+4. No yield/interest generation (future version)
 
-## Estrutura do Projeto
+## Project Structure
 
 ```
 src/
-├── KipuBank.sol                          # Contrato principal (596 linhas)
+├── KipuBank.sol                          # Main contract (596 lines)
 └── interfaces/
-    └── AggregatorV3Interface.sol         # Interface Chainlink
+    └── AggregatorV3Interface.sol         # Chainlink interface
 
-lib/openzeppelin-contracts/               # Dependências OpenZeppelin
-foundry.toml                              # Configuração Foundry
-remappings.txt                            # Mapeamento de imports
+lib/openzeppelin-contracts/               # OpenZeppelin dependencies
+foundry.toml                              # Foundry configuration
+remappings.txt                            # Import mappings
 ```
 
-## Testes
+## Testing
 
 ```bash
 forge test -vvv
 ```
 
-## Otimizações de Gas
+## Gas Optimizations
 
-- Custom errors (~50 gas economizado por revert)
-- `constant` para identificadores de role
-- `immutable` para owner
+- Custom errors (~50 gas saved per revert)
+- `constant` for role identifiers
+- `immutable` for owner
 - Nested mappings (O(1) lookups)
-- Validações antecipadas (fail fast)
+- Early validations (fail fast)
 
 ## License
 
